@@ -1,6 +1,6 @@
 [TOC]
 
-# 从现在开始就永远不晚
+# 从现在开始就永远不晚(alive)
 
 # 学习方法
 
@@ -20,10 +20,6 @@
   - 讲的过程是把概念的逻辑重新梳理，再加工的过程，在不断的探索知识的边界。
   - 把被动学习转化为主动学习，主动学习是最好的学习方法，比如也就是学以致用。
   - 以教代学
-
-
-
-
 
 # 线性代数
 
@@ -322,8 +318,6 @@ https://www.cnblogs.com/jfdwd/p/11158652.html
 
 
 
-
-
 # 吴恩达 RNN课程
 
 ## 课后作业
@@ -523,6 +517,16 @@ Skip-Gram思想：
 
 
 # ML & DL
+
+## 1. DNN
+
+## 2. CNN
+
+## 3. RNN
+
+## 4. Loss function
+
+## 5. Optimizer
 
 ## Keras
 
@@ -1896,3 +1900,153 @@ TODO：使用keara搭建的模型的参数的个数是如何计算的，各种�
 
 B站视频课程：https://www.bilibili.com/video/BV1JE411g7XF?p=5
 
+## Gradient descent
+
+在梯度下降中，梯度的方向是Loss的等高线的法线方向，梯度乘以一个负的学习率$\eta$。首先初始化一个$\theta$，再不断的更新。在更新的过程，重点关注的是学习率。在模型训练的一开始，loss比较大，希望使用比较大的学习率，当训练到后期，希望使用比较小的学习率。有没有可以自动调节的方法呢？
+
+<img src="images_mldl/image-20201110233659458.png" alt="image-20201110233659458" style="zoom:50%;" />
+
+
+
+### Tip1: learning rate decay-- Adagrad
+
+当前的学习率取决与当前步骤$t$以及之前所有步骤的梯度，每个参数的学习率是不同的。
+
+<img src="images_mldl/image-20201110235012074.png" alt="image-20201110235012074" style="zoom:40%;" />
+
+<img src="/Users/renal/Library/Application Support/typora-user-images/image-20201111000059020.png" alt="image-20201111000059020" style="zoom:40%;" />
+
+
+
+<img src="/Users/renal/Library/Application Support/typora-user-images/image-20201111000228803.png" alt="image-20201111000228803" style="zoom:50%;" />
+
+普通梯度下降与Adagrad的对比，在我们的认知中，学习率衰减是当梯度值比较大的时候使用比较大的学习率，当梯度值比较小的时候使用比较小的学习率。但是Adagrad的分子代表比较大的梯度值要用大的学习率，但是分母在使用梯度时，$\eta$除以梯度得到比较小的学习率。这个看似是矛盾的？
+
+<img src="/Users/renal/Library/Application Support/typora-user-images/image-20201111001902788.png" alt="image-20201111001902788" style="zoom:50%;" />
+
+但是，真的是当梯度值大的时候就是使用大的学习率么？在对比同一个参数的时候是成立的，但是对比不同的参数的时候是不成立。比如，a的一阶梯度值比c的一阶梯度值小，但是它离终点更大。所以，在跨参数的时候，这个结论是不成立的。不仅需要考虑一阶导，而且需要考虑二阶导的值。
+
+<img src="/Users/renal/Library/Application Support/typora-user-images/image-20201111002946081.png" alt="image-20201111002946081" style="zoom:50%;" />
+
+
+
+<img src="images_mldl/image-20201111003533576.png" style="zoom:50%" >
+
+### Tip2: Stochastic Gradient Descent
+
+SGD makes the training faster.
+
+# 强化学习
+
+## 1. 李宏毅2020课程笔记
+
+### policy gradient
+
+<img src="images_mldl/1E4D16A8-8AC1-48B3-908E-BD38C3EFF98C.png" alt="1E4D16A8-8AC1-48B3-908E-BD38C3EFF98C" style="zoom:50%;" />
+
+强化学习分为model-based和model-free的，model-free的又分为policy-based、value-based及 policy+value based。policy-based  model学习得到一个actor，value-based学习得到critic，而两者结合的也得到actor+critic。目前（2020）年最强的是A3C，使用的就是policy-based和value-based组合的形式。
+
+### PPO
+
+PPO是policy gradient的一个变形。在reinforcement learning里面Environment和Reward function不是可以控制的，而是在训练开始之前已经确定的，唯一可以调整的是actor的Policy，使得可以获得最大的reward。PPO是Deep mind的default的强化学习的方法。
+
+#### 复习policy gradient
+
+<img src="images_mldl/image-20210131010043952.png" alt="image-20210131010043952" style="zoom:30%;" />
+
+训练的过程中如下：
+
+<img src="images_mldl/image-20210131010730843.png" alt="image-20210131010730843" style="zoom:33%;" />
+
+实作的过程：训练数据就是在某个状态$t$下采取的动作 $a$，然后得到的reward是$R(τ)$。 
+
+<img src="images_mldl/image-20210131012238395.png" alt="image-20210131012238395" style="zoom:33%;" />
+
+
+
+实现：训练数据是n个episode，在每个episode中，采样$T$个$s$状态选择$a$，并且该episode得到的整体Reward $R(τ^n)$，这里的$n$代表是第$n$次episode。和分类模型的损失函数相差不大，在每个样本上加上了一个权重$R(τ)$
+
+<img src="images_mldl/image-20210131103749690.png" alt="image-20210131103749690" style="zoom:33%;" />
+
+**Tip1：**如果R(τ）一直是正值的时候会出现一个问题：在理想状态下，如果所有的action都被sample到的话，求梯度后没有什么问题。如果一个action a没有被sample到，在取梯度之后，它的概率会下降，这样是不太合理的。所以需要让R(τ)有正有负，
+
+所以让R(τ)减去一个baseline b。这个b是需要根据不同的情况来设置的。
+
+<img src="images_mldl/image-20210131104814722.png" alt="image-20210131104814722" style="zoom:33%;" />
+
+**Tip2：**使用整个episode的Reward对梯度进行weight的时候不太合理，某个action影响的之后的reward，所以下面的式子中，使用了$t$之后的reward，并且加入了一个discount factor，来表示越远的action影响越小，衰减是指数级别的。用$A^\theta(s_t,a_t)$来表示Reward加权的那一项。
+
+<img src="images_mldl/image-20210131212023721.png" alt="image-20210131212023721" style="zoom:33%;" />
+
+
+
+#### On-policy v.s. Off-policy
+
+on-policy：agent一边和环境交互一边学习，坏处是在做policy gradient的时候data只能使用一次。
+
+off-policy：学习的agent与和环境交互的agent不是同一个。off-policy的好处是sample得到的data可以重复使用。
+
+<img src="images_mldl/image-20210131220227112.png" alt="image-20210131220227112" style="zoom:20%;" />
+
+从on-policy到off-policy的需要引入importance sample。on-policy从$p_{\theta}$中sample data，off-policy则是从$p_{\theta'}$中sample data。
+
+$\bigtriangledown \bar {R_{\theta}}$在求的时候需要加入另一个分布$p_{\theta'}$。但是importance sampling有一个问题是$p_{\theta}$和$p_{\theta'}$的分布不能差太多。虽然两个分布的期望可能一样，但是可能由于样本sample的不足，导致数据的方差差别很大，最终导致效果不好。
+
+<img src="images_mldl/image-20210131231940989.png" alt="image-20210131231940989" style="zoom:33%;" />
+
+
+
+<img src="images_mldl/image-20210131232127635.png" alt="image-20210131232127635" style="zoom:33%;" />
+
+
+
+如何保证$p_{\theta}$和$p_{\theta'}$不会差太多，就是PPO要做的事情。
+
+<img src="images_mldl/image-20210131235515287.png" alt="image-20210131235515287" style="zoom:33%;" />
+
+PPO是在原来的Objective function上加入了一项限制，$\theta$和$\theta'$的KL，类似于监督学习的regulization。这个限制不是参数上大小的距离，而是输入一个state输入相同action的距离。而且两者并不是统一的，$\theta$和$\theta'$可能相差一点儿，但是学出来的action可能会差很多；也有可能参数差别很大，但是行为可能差别没有那么大。
+
+TRPO是PPO的前身，并没有把限制条件放到objective function中，实际训练的过程要比PPO麻烦很多。
+
+如下是PPO具体的算法，有两个，PPO2是把KL加入进去了：
+
+<img src="images_mldl/image-20210201001435390.png" alt="image-20210201001435390" style="zoom:33%;" />
+
+在PPO2中的算法中，横轴代表$ \frac{p_{\theta}(a_t|s_t)}{p_{\theta^k}(a_t|s_t)}$。蓝色的虚线是clip(.)这个一项，绿色的虚线是min(.,.)的第一项。红色的实线分别是在A>0和A<0时得到的值。但是，有一个问题，使用的训练数据都是从$p_{\theta^k}$中sample出来的，如何计算? $ \frac{p_{\theta}(a_t|s_t)}{p_{\theta^k}(a_t|s_t)}$是一个NN的网络么。
+
+
+
+
+
+
+
+
+
+
+
+
+
+# 调参总结
+
+- 学习率
+
+  - 学习率减小一个数量级可以使得学习速度变慢（相同的num_epoch，f1值，loss都会相对较小），所以需要增大num_epochs
+
+  <img src="images_mldl/image-20201113124333695.png" alt="image-20201113124333695" style="zoom:50%;" />
+
+# 面试题目汇总
+
+随机森林：
+
+1. 随机森林使用的是什么决策树，不同的决策树的特征分裂条件是什么？有哪几种类型的决策树？
+
+2. 随机森林的算法过程是什么？分类和回归的最后的结果是如何判断的？为什么要随机取样？随机取样的时候为什么要又放回的取样，这样会有重复的数据。为什么要随机选择特征？并且随机选择特征要远远小于特征总数量？随机森林是否需要剪枝，为什么不需要剪枝？
+
+3. 随机森林在一个测试集内能否做到无偏估计？为什么？袋外样本的概率是多少？
+
+4. 随机森林是通过bagging随机产生样本，并通过基分类器来投票或平均得到最终结果，是否可以把决策树替换成逻辑回归模型？
+
+   随机森林属于Bagging类的集成学习，Bagging的主要好处是集成后的分类器的方差，比基分类器的方差小。所以基分类器最好是不稳定的本身对样本分布较为敏感的基分类器。线性分类器或者K-近邻都是较为稳定的分类器，本身方差并不大，所以用Bagging方法并不能获得更好的表现，甚至因为采样问题更难收敛增大了集成分类器的难度。
+
+5. 样本不平衡问题？有哪些解决方法？sklearn中的random forest的balanced是如何处理的？
+6. 有一个二分类任务，但是正样本中有标注错误的数据，负样本都是正确的，并且负样本远远大于正样本的数量，能否设计一个分类算法？
