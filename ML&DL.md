@@ -21,6 +21,31 @@
   - 把被动学习转化为主动学习，主动学习是最好的学习方法，比如也就是学以致用。
   - 以教代学
 
+## 常用快捷键
+
+### chrome
+
+- 快速切换标签（常用）
+  - 从左往右切：`ctrl`+`Tab`
+  - 从右往左切：`ctrl`+`Shift`+`Tab`
+  - 显示上一个标签页：`Option` + `Commond` + `<-`
+  - 显示下一个标签页：`Option` + `Commond` + `->`
+
+- 回退与前进
+  - 回退：`Commond` + `<-`
+  - 前进：`Commond` + `->`
+- 关闭/创建新标签
+  - 关闭标签：`Commond`+`W`
+  - 创建新标签：`Commond`+`T`
+
+- 页面翻页
+  - 向下翻页：`Option` + `向下箭头`
+  - 向上翻页：`Option` + `向上箭头`
+
+### 有道词典
+
+
+
 # 线性代数
 
 ## MIT线性代数课
@@ -101,7 +126,7 @@ http://www-personal.umich.edu/~jizhu/jizhu/wuke/Friedman-AoS01.pdf
 
 - 模型 model
 
-  线性模型：$\hat{y}=\sum_jw_jx_{ij}$，其中 $x \in R^d $
+  线性模型：$\hat{y}=\sum_jw_jx_{ij}$，其中 $x \in R^d $，$x_{ij}$代表第$i$个样本的第$j$个特征，一共有$d$个特征。
 
 - 参数是 $w$是每个特征对应的权重：$\Theta = \{w_j|j=1,2,...d\}$，参数是我们要在训练数据中学到的，也就是要求的未知量。
 
@@ -121,6 +146,16 @@ $$
 
 ### 2. Regression Tree and Ensemble(What are we learning)
 
+xgb和lgb中都是使用的是回归树（分类树的结果是用于投票的，少数服从多数，结果相加是没有意义的）。如下图，用CART树预测家庭成员是否喜欢玩游戏，越喜欢玩游戏分越高，越不喜欢玩游戏分越低。第一个图是一棵树，根据不同的特征分类（此处选择了age和 is male两个特征），每个叶子结点计算一个分数（叶子节点内所有的样本的分数是一样的）。第二个图是两个棵树，两棵树的分类特征是不同的，所以两棵树的结果是互补的，综合在所有树中得分计算一个成员的最终得分。
+
+<img src="/Users/renal/Documents/mllearn/githubs/machine_learning/images_mldl/image-20210620225026853.png" alt="image-20210620225026853" style="zoom: 33%;" />
+
+下图是两棵树的集成，每个样本最后的结果是在每个树的分数的和。
+
+<img src="/Users/renal/Documents/mllearn/githubs/machine_learning/images_mldl/xgb_regresstion tree ensemble.png" alt="image-20210620230028681" style="zoom:33%;" />
+
+
+
 对于集成回归树，定义模型，假设一共有K棵树：每棵树都属于回归树空间：
 $$
 \hat{y_i} = \sum_{k=1}^Kf_k(x_i), \quad f_k \in \mathcal{F} \\
@@ -136,6 +171,14 @@ Obj = \sum_{i=1}^nl(y_i,\hat{y_i})+ \sum_{k=1}^K\Omega(f_k)
 $$
 接下来就是如果定义一棵树的复杂度了，我们知道决策树是启发式的，比如通过信息增益来进行分割(split by Information gain)、限制最大树深(max depth)、给决策树剪枝(Prune tree)及平滑叶节点(smooth leaf nodes)，这些启发式的是可以对应训练目标的，以上四个分别对应：training loss、限制函数空间的大小、通过节点个数来正则化、L2正则化。所以可以借鉴决策树，来定义集成树的正则化项，最终也是使用叶节点个数和L2正则化两项来定义，当然也可以有其它的定义方法。
 
+梯度提升树到底是如何建模的？
+
+<img src="/Users/renal/Documents/mllearn/githubs/machine_learning/images_mldl/xgb 单变量学习.png" alt="image-20210620231614298" style="zoom:33%;" />
+
+想一下启发式学习和目标式学习的区别：
+
+<img src="/Users/renal/Documents/mllearn/githubs/machine_learning/images_mldl/目标式和启发式学习对比.png" alt="image-20210620231728132" style="zoom:33%;" />
+
 ### 3. Gradient Boosting 梯度提升(How to learn)
 
 目标函数我们已经有了，接下来是如何学习的问题，我们并没有使用SGD（LR模型的训练就是使用SGD的），这是由于参数是一个树模型，而不仅仅是一个向量。学习树的结构比传统的优化要难，传统的优化可以用梯度的方法。并且一下学习完所有的树是非常困难的。**所以我们使用加法的方式，修正已经学习的结果，一次添加一个树。**  
@@ -150,39 +193,92 @@ $$
 & \hat{y_i}^{(t)} = \sum_{k=1}^tf_k(x_i) =\hat{y_i}^{(t-1)} + f_1(x_i)
 \end{align}
 $$
-代入目标函数：
+
+
+将第$t$棵树的结果带入到目标函数中，其中前
 $$
 \begin{align}
 Obj^{(t)} &= \sum_{i=1}^nl(y_i,\hat{y_i}^{(t)}) + \sum_{k=1}^t\Omega(f_k) \\
-&= \sum_{i=1}^nl(y_i,\hat{y_i}^{(t-1)}+f_k(x_i)) + \Omega(f_k) + Const\\
-&= \sum_{i=1}^n [l(y_i,\hat{y_i}^{(t-1)}) + \partial l_{\hat{y_i}^{(t-1)}}(y_i,\hat{y_i}^{(t-1)})f_k(x_i)+ \frac{1}{2} \partial^2 l_{\hat{y_i}^{(t-1)}}(y_i,\hat{y_i}^{(t-1)})f_k^2(x_i)] + \Omega(f_k) + Const\\
-&= \sum_{i=1}^n [\partial l_{\hat{y_i}^{(t-1)}}(y_i,\hat{y_i}^{(t-1)})f_k(x_i)+ \frac{1}{2}\partial^2 l_{\hat{y_i}^{(t-1)}}(y_i,\hat{y_i}^{(t-1)})f_k^2(x_i)] + \Omega(f_k) + Const\\
-& \approx \sum_{i=1}^n [g_i f_k(x_i)+ \frac{1}{2}h_if_k^2(x_i)] + \Omega(f_k) \\
-其中：&  g_i = \partial l_{\hat{y_i}^{(t-1)}}(y_i,\hat{y_i}^{(t-1)}) \\
-&  h_i = \partial^2 l_{\hat{y_i}^{(t-1)}}(y_i,\hat{y_i}^{(t-1)})  \\
-
-定义：& \Omega(f_k) = \gamma T + \frac{1}{2}\lambda \sum_{i=1}^nw_i^2 \\
-所以：& Obj^{(t)} = \sum_{i=1}^n [g_i f_k(x_i)+ \frac{1}{2}h_i f_k^2(x_i)] +  \gamma T + \frac{1}{2}\lambda\sum_{i=1}^nw_i^2  \\
-定义：& f(x_i) = w_{q(x_i)},其中：w \in \R^T, q:\R^d \longrightarrow \{1,2,...,T\}\\
-& 把样本按叶结点再聚合，同一个叶节点的w是相同的 \\
-& I_j = \{i|q(x_i)=j\}，表示第j个叶子节点中所有的样本索引 \\
-
-Obj^{(t)} &=\sum_{j=1}^T[(\sum_{i\in I_j}g_i)w_j + \frac{1}{2}(\sum_{i\in I_j}h_i+\lambda)w_j^2] + \gamma T \\
-
-定义：&\sum_{i\in I_j}g_i = G_j \quad \sum_{i\in I_j}h_i = H_j \\
-
-Obj^{(t)} &=\sum_{j=1}^T[G_jw_j + \frac{1}{2}(H_j+\lambda)w_j^2] + \gamma T \\
-
-式子中，&对于G_j和H_j是已知量，其中的未知量为w_j，求Obj的最小值，令w_j求导为0，解得： \\
-w^* = & -\frac{G_j}{H_j+\lambda}，再代入Obj \\
-Obj = & - \frac{1}{2}\sum_{j=1}^T\frac{G_j^2}{H_j+\lambda} + \gamma T \quad 越小越好 \\
-
+          &= \sum_{i=1}^nl(y_i,\hat{y_i}^{(t-1)}+f_t(x_i)) + \Omega(f_t) + Const
 \end{align}
 $$
+其中$\hat{y_i}^{(t-1)}$和$f_t(x_i)$是变量，$y_i$是常量，我们的目标是是找到一个$f_t$来最小化目标函数。
+
+将损失函数进行二阶泰勒展开：
+$$
+f(x + \Delta x) \simeq f(x) + f'(x) \Delta x + \frac{1}{2} f''(x)\Delta x^2
+$$
+对比损失函数中，$f_t$是增量，所有对应泰勒公式中的$\Delta x$：
+
+定义一阶和二阶导：**可见，在求第t棵树的loss时，用到了损失函数在第t-1棵树的一阶梯度和二阶梯度，在t轮时，$g_i$和$h_i$为常数**
+$$
+g_i = \partial l_{\hat{y_i}^{(t-1)}}(y_i,\hat{y_i}^{(t-1)}) \\
+h_i = \partial^2 l_{\hat{y_i}^{(t-1)}}(y_i,\hat{y_i}^{(t-1)})  
+$$
+
+$$
+\begin{align}
+Obj^{(t)} &= \sum_{i=1}^n [l(y_i,\hat{y_i}^{(t-1)}) + \partial l_{\hat{y_i}^{(t-1)}}(y_i,\hat{y_i}^{(t-1)})f_k(x_i)+ \frac{1}{2} \partial^2 l_{\hat{y_i}^{(t-1)}}(y_i,\hat{y_i}^{(t-1)})f_t^2(x_i)] + \Omega(f_t) + Const\\
+&= \sum_{i=1}^n [\partial l_{\hat{y_i}^{(t-1)}}(y_i,\hat{y_i}^{(t-1)})f_t(x_i)+ \frac{1}{2}\partial^2 l_{\hat{y_i}^{(t-1)}}(y_i,\hat{y_i}^{(t-1)})f_t^2(x_i)] + \Omega(f_t) + Const\\
+& \approx \sum_{i=1}^n [g_i f_t(x_i)+ \frac{1}{2}h_if_t^2(x_i)] + \Omega(f_t) 
+\end{align}
+$$
+
+定义第$t$棵树的复杂度：
+$$
+\Omega(f_t) = \gamma T + \frac{1}{2}\lambda \sum_{j=1}^Tw_j^2
+$$
+其中，$T$代表树的叶子节点的个数，$w_j$代表第$j$个叶子节点的分数，此处是$L2$正则化。
+
+<img src="/Users/renal/Documents/mllearn/githubs/machine_learning/images_mldl/xgb_树的复杂度.png" alt="image-20210620235958559" style="zoom:33%;" />
+
+树的复杂度计算示例：
+
+<img src="/Users/renal/Documents/mllearn/githubs/machine_learning/images_mldl/xgb_树的复杂度2.png" alt="image-20210621000051465" style="zoom:33%;" />
+
+
+
+将正则化项带入目标函数：
+$$
+Obj^{(t)} = \sum_{i=1}^n [g_i f_t(x_i)+ \frac{1}{2}h_i f_t^2(x_i)] +  \gamma T + \frac{1}{2}\lambda\sum_{i=j}^T w_j^2
+$$
+&把样本按叶结点再聚合，同一个叶节点的w是相同的：
+$$
+ f(x_i) = w_{q(x_i)},其中：w \in \R^T, q:\R^d \longrightarrow \{1,2,...,T\}\\
+$$
+将$f_t(x_i)$与$w_j$合并，在叶子级别上合并：
+$$
+定义：I_j = \{i|q(x_i)=j\}，表示第j个叶子节点中所有的样本索引
+$$
+所以，目标函数为：
+$$
+Obj^{(t)} =\sum_{j=1}^T[(\sum_{i\in I_j}g_i)w_j + \frac{1}{2}(\sum_{i\in I_j}h_i+\lambda)w_j^2] + \gamma T
+$$
+
+$$
+\sum_{i\in I_j}g_i = G_j \quad \sum_{i\in I_j}h_i = H_j \\
+$$
+
+其中$G_j$代表在第$j$个叶子节点上所有训练数据的一阶梯度的和，$H_j$代表在第$j$个叶子节点上所有训练数据的二阶梯度的和
+
+带入目标函数后：
+$$
+Obj^{(t)} =\sum_{j=1}^T[G_jw_j + \frac{1}{2}(H_j+\lambda)w_j^2] + \gamma T 
+$$
+式子中，$G_j$和$H_j$是已知量，$w_j$是未知量，要求Obj的最小值，令第t轮的$Obj$对$w_j$求导为0，解得：
+$$
+w^* = -\frac{G_j}{H_j+\lambda}
+$$
+再带入$Obj$中：
+$$
+Obj^{(t)} = - \frac{1}{2}\sum_{j=1}^T\frac{G_j^2}{H_j+\lambda} + \gamma T \quad
+$$
+树在第$t$轮生长的时候，$Obj$越小越好。
+
 树是如何生长的，也就是结点是如何分裂的？
 分裂之前计算一个Obj，首先对每个特征的数据进行预排序，遍历每个特征的所有数据，把每个数据作为分割点，再计算分割之后的左叶子Obj和右叶子样本的Obj，计算增益为：前-后
 $$
-Gain= \frac{1}{2}[\frac{G_L^2}{H_L + \lambda} + \frac{G_R^2}{H_R + \lambda} - \frac{(G_L+G_R)^2}{H_L + H_R + \lambda}] - \gamma
+Gain= \frac{1}{2}[  - \frac{(G_L+G_R)^2}{H_L + H_R + \lambda} + （\frac{G_L^2}{H_L + \lambda} + \frac{G_R^2}{H_R + \lambda}）] - \gamma
 $$
 
 
@@ -254,7 +350,7 @@ https://blog.csdn.net/anshuai_aw1/article/details/82970489#_604
 
 - 类别类型处理
 
-# 条件随机场(Conditional Random Field, CRF)
+# CRF
 
 条件随机场主要是用于序列标注问题，使用到的模型是线性链（Linear Chian CRF）条件随机场，根据输入序列，预测输出序列。
 
@@ -384,7 +480,7 @@ $$
 
 
 
-RNN Cell的反向传播：
+RNN的反向传播
 
 
 
@@ -526,7 +622,312 @@ Skip-Gram思想：
 
 ## 4. Loss function
 
+pytorch中的Loss functions：https://neptune.ai/blog/pytorch-loss-functions
+
+根据算法任务，损失函数可以分为：regression损失函数、classification损失函数以及Ranking损失函数。
+
+（1）回归损失函数
+
+- Mean Abstract Error Loss（L1 Loss）
+
+
+
+- Mean Squared Error Loss（L2 Loss）
+
+（2）分类损失函数
+
+- Negative Log-Likelihood Loss
+- Cross-Entropy Loss
+
+（3） 损失函数 
+
+- Hinge Embedding Loss
+- Margin Ranking Loss
+
+计算$x_1$和$x_2$的距离，如果要学习到$x_1$比$x_2$大，当$y=1$，则学习到的$x_1$比$x_2$越大，loss就越小。如果要学习到$x_1$比$x_2$小，当$y=-1$，则学习到的$x_1$比$x_2$越小，loss就越小。margin为一个常数，是$x_1$和$x_2$的间距。
+
+公式：$loss(x_1,x_2, y) = max(0, -y*(x_1-x_2) + margin)$
+
+```python
+import torch
+from torch import nn
+
+loss_fn = nn.MarginRankingLoss(margin=1)
+
+# pytorch要求x1和x2的维度一致
+x1 = torch.tensor([0.8, 0.5]) # 正样本得分
+x2 = torch.tensor([0.2, 0.1]) # 负样本得分
+target = torch.tensor([1 , 1])
+loss_fn(x1,x2,target)  # tensor(0.5000)
+# 计算方式，默认是每个样本求平均：(max(0, -1*(0.8-0.2)+1) + max(0, -1*(0.9-0.1)+1))/2
+```
+
+问题：如何实现pair-wise的排序呢？所谓pair-wise就是每一对对的进行比较，比如，在文本相似性任务中，我们除了想得到相互匹配的正样本外，还希望正样本的得分比任何负样本的得分低。如上图中的例子中，正样本有两个负样本有三个，第一个正样本和第一负样本的loss为0.4，第二个正样本和第二个负样本的loss也为0.6，直觉上也可以理解，相对的差距越大损失就越小。但是，如果也想第一个正样本和第二负样本也进行排序，如何实现呢。并且还有一种情况是，正负样本不均衡的时候，$1D$的$x_1$和$x_2$无法直接比较了。
+
+此时需要用到广播的性质了，使用`unsqueeze()`扩展其中的一个维度，形成$n \times m$个pair对，target是一个$1D$的，也扩展成$n \times m$个label，再进行计算。
+
+```python
+loss_fn = nn.MarginRankingLoss(margin=1)
+    
+x1 = torch.tensor([0.8,0.9,0.7])
+x2 = torch.tensor([0.2,0.1])
+target = torch.tensor([1,1,1])
+#print(loss_fn(x1,x2,target))  保存：x1和x2不一样长
+
+x1 = x1.unsqueeze(1) # x1.shape: torch.Size([3,1])
+x2 = x2.unsqueeze(0) # x2.shape: torch.Size([1,2])
+target = torch.tensor([1])
+
+print(loss_fn(x1,x2,target))
+```
+
+这个损失函数应用比较广泛，在有些二分类任务中也用到这个损失函数。
+
+- Triplet Margin Loss
+- Kullback-Leibler divergence
+
 ## 5. Optimizer
+
+- AdamW
+
+线性warmup scheduler源码（来源与transformers）：
+
+![image-20210514113220636](/Users/renal/Documents/work_dairy_imgs/image-20210514113220636.png)
+
+线性warmup scheduler的作用：将整个训练过程分为了两个部分，在num_warmup_steps分割。从开始到分割点，学习率从0线性变化到设置的初始lr，在分割点后，再线性的将lr降到0。
+
+
+
+### 梯度裁剪（gradient clipping
+
+反向传播是整个深度学习的核心，通过损失函数计算梯度，在负梯度方向上是下降最快的方向，在正梯度方向上是上升最快的。然后利用梯度来更新参数，从训练数据中学到东西。
+
+梯度爆炸和梯度消失原因、及解决办法：
+
+https://neptune.ai/blog/understanding-gradient-clipping-and-how-it-can-fix-exploding-gradients-problem
+
+- 梯度裁剪的方式：
+
+  - clipping by value
+
+    ![image-20210514143448754](/Users/renal/Documents/work_dairy_imgs/image-20210514143448754.png)
+
+    从源码中可以看出来，是把梯度按照$\left[\text{-clip_value}, \text{clip_value}\right]$进行裁剪的，把大于阈值和小于阈值的梯度值设置为阈值。并没有对$g$求模
+
+  - clipping by norm
+
+    在`pytorch`中使用`torch.nn.utils.clip_grad_norm_`对梯度进行裁剪
+    $$
+    g = \frac{g * threshold}{||g||_2}
+    $$
+    算法过程：
+
+    ![image-20210516112719219](/Users/renal/Documents/work_dairy_imgs/image-20210516112719219.png)
+
+    首先计算梯度，当$||g||$大于等于threshold时，就对梯度进行裁剪。由于$g/||g||$为单位向量，所以更新后的$g$的norm（模）的最大值是threshold，所以threshold可以理解为最大的模（max_norm），为超参数。
+
+    
+
+    源码如下：![image-20210514142927607](/Users/renal/Documents/work_dairy_imgs/image-20210514142927607.png)
+
+- 梯度裁剪的使用方式
+
+  ![image-20210514144212146](/Users/renal/Documents/work_dairy_imgs/image-20210514144212146.png)
+
+
+
+
+
+## 6. 激活函数
+
+- sigmoid与tanh函数的区别
+
+  ![image-20210516111133572](/Users/renal/Documents/work_dairy_imgs/image-20210516111133572.png)
+
+
+
+## 7. LN&BN
+
+
+
+无论是LayerNormalization或者Batch Normalization都是对数据进行归一化处理：处理流程为先求均值和方差，在对数据做归一化（注意这里不是对梯度归一化、也不是对权重归一化，而是对输入的数据），最后进行scale和shift。
+
+公式如下：
+$$
+y = \frac{x - \mathrm{E}[x]}{ \sqrt{\mathrm{Var}[x] + \epsilon}} * \gamma + \beta
+$$
+其中$E[x]$均值，$Var[x]$是方差，$\epsilon$是为了防止方差为0的情况，$\gamma$和$\beta$是可学习的参数。
+
+**Batch Normalization**算法流程：
+
+<img src="/Users/renal/Documents/work_dairy_imgs/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L0hVU1RIWQ==,size_16,color_FFFFFF,t_70.png" alt="img" style="zoom:80%;" />
+
+- **为什么要BN?**
+
+  ​	BN把每层神经网络任意神经元这个输入值的分布强行拉回到均值为0方差为1的标准正态分布，其实就是把越来越偏的分布强制拉回比较标准的分布。这样让梯度变大，避免梯度消失问题产生，而且梯度变大意味着学习收敛速度快，能大大加快训练速度。经过BN后，目前大部分Activation的值落入非线性函数的线性区内，其对应的导数远离导数饱和区，这样来加速训练收敛过程。
+
+  ​	如果激活函数是Sigmoid的话，当输入值非常大或者非常小的时候，求导后是趋向去0的，这样就造成了梯度的消失。如果梯度非常小，参数更新的也会非常慢，造成训练比较慢。
+
+  所以需要把上一层的输出拉回到均值为0，方差为0的标准分布，以此避免梯度消失，加速训练收敛过程。
+
+- 可学习的参数$\gamma$和$\beta$是如何学习的？
+
+  初始化了一个$normalized\_shape$的$weight$和$bias$，源码如下：
+
+  <img src="/Users/renal/Documents/work_dairy_imgs/image-20210519195743592.png" alt="image-20210519195743592" style="zoom: 67%;" />
+
+  
+
+- 为什么需要做scale和shift？
+
+  **但是这样会导致网络表达能力下降，为了防止这一点，每个神经元增加两个调节参数（scale和shift），这两个参数是通过训练来学习到的，用来对变换后的激活反变换，使得网络表达能力增强**，即对变换后的激活进行如下的scale和shift操作，这其实是归一化的反操作。
+
+- BN有什么优缺点？在BN的缺点上LN是可以解决的。
+
+  - BN的优点：
+    - 加快神经网络的训练时间。BN强行拉平了数据分布，它可以让收敛速度更快。使得总的训练时间更短。
+    - 容忍更高的学习率（learning rate）和初始化权重更容易。对于深层网络来说，权重的初始化要求是很高的，而BN能够动态的调整数据分布，因此初始化的要求就不像以前那么严格了。
+    - 可以支持更多的损失函数。有些损失函数在一定的业务场景下表现的很差，就是因为输入落入了激活函数的死亡区域——饱和区域。而BN的本质作用就是可以重新拉正数据分布，避免输入落入饱和区域，从而减缓梯度消失的问题。
+    - 提供了一点正则化的作用，可能使得结果更好。BN在一定的程度上起到了dropout的作用，因此在适用BN的网络中可以不用dropout来实现。
+
+  - 那么BN的不足呢？
+    - BN对于batch_size的大小还是比较敏感的，batch_size很小的时候，其梯度不够稳定，效果反而不好。
+    - BN对于序列网络，RNN、lstm等模型的效果并不好
+
+  针对以上BN的不足，主要是BN应用到RNN、LSTM等网络上效果不好的缺点，研究人员提出了LN。在继承了BN的优点上，还有另外2个优点：
+
+  - LN能够很好的应用在RNN、lstm等类似的网络上。
+  - LN是针对一层网络所有的神经元做数据归一化，因此对batch_size的大小并不敏感。
+
+- BN和LN在计算的方式上有什么不同？
+
+  <img src="/Users/renal/Documents/work_dairy_imgs/format,png.png" alt="preview" style="zoom:50%;" />
+
+- 为什么Bert活着Transformer使用的是LN而不是BN呢？
+
+  - 直观解释
+
+    我们先把这个问题转化一下，因为Bert和Transformer基本都是应用到了NLP任务上。所以可以这样问：
+
+    为何CV数据任务上很少用LN，用BN的比较多，而NLP上应用LN是比较多的？
+
+    我们用文本数据句话来说明BN和LN的操作区别。
+
+    我是中国人我爱中国
+
+    武汉抗疫非常成功0
+
+    大家好才是真的好0
+
+    人工智能很火000
+
+    上面的4条文本数据组成了一个batch的数据，那么BN的操作的时候
+
+    就会把4条文本相同位置的字来做归一化处理，例如：我、武、大、人
+
+    我认为这里就破坏了一句话内在语义的联系。
+
+    而LN则是针对每一句话做归一化处理。例如：我是中国人我爱中国——归一化处理后，一句话内每个字之间的联系并没有破坏。从这个角度看，LN就比较适合NLP任务，也就是bert和Transformer用的比较多。
+
+  - 从Embedding分布上
+
+    1、layer normalization 有助于得到一个球体空间中符合0均值1方差高斯分布的 embedding， batch normalization不具备这个功能。
+
+    2、layer normalization可以对transformer学习过程中由于多词条embedding累加可能带来的“尺度”问题施加约束，相当于对表达每个词**一词多义的空间施加了约束**，有效降低模型方差。batch normalization也不具备这个功能。
+
+    **NLP和CV的任务差别：**
+
+    图像数据是自然界客观存在的，像素的组织形式已经包含了“信息”
+
+    NLP数据则是又embedding开始的，这个embedding并不是客观存在的，它是由我们设计的网络学习出来的。
+
+    通过layer normalization得到的embedding是 以坐标原点为中心，1为标准差，越往外越稀疏的球体空间中。这个正是我们理想的数据分布。
+
+    另外一词多义的表示中——简单来说，每个词有一片相对独立的小空间，通过在这个小空间中产生一个小的偏移来达到表示一词多义的效果。transformer每一层都做了这件事，也就是在不断调整每个词在空间中的位置。这个调整就可以由layer normalization 来实现，batch normalization是做不到的。
+
+## 8. PLMs
+
+### BERT
+
+- BERT的双向编码如何理解？对比GPT、ELMO的编码有什么优势？
+
+- BERT的位置编码为什么要使用cos和sin三角函数，对位置编码有什么要求？
+
+  正弦函数：
+
+  ```
+  ψ = A sin(BX+C)
+  B=2π/λ；波长λ=2π/B
+  φ=Asin(kx-ωt)
+  A振幅,k波数,ω角频率,v=ω/k
+  k=2π/λ,ω=2π/T;T为周期
+  ```
+
+  
+
+## 9. DST
+
+### version 0.1
+
+模型设计：
+
+Slot Operator:
+$$
+V_t^j = \begin{cases} 
+                               V_{t-1}^j  & if \space r_t^j= KEEP \\ 
+                               V_{t}^j  & if \space  r_t^j = UPDATE \\
+                               NULL  & if \space r_t^j=DELETE  \\
+                               DONTCARE & if \space r_t^j=DONTCARE \\                
+            \end{cases}
+$$
+Intent Operator:
+$$
+E_t^j = \begin{cases} 
+                               I_{t-1}^j  & if \space p_t^j= KEEP \\ 
+                               I_{t}^j  & if \space  p_t^j = UPDATE \\              
+            \end{cases}
+$$
+BERT输入：
+$$
+X_t\;=\;\lbrack CLS\rbrack\oplus D_t\oplus B_t \oplus E_t
+$$
+**特征一：对话历史(Dialogue History)**
+$$
+D_t = U_t \oplus [SEP] \oplus U_{t-1} \oplus [SEP]
+$$
+其中$D_t$代表第$t$和第$t-1$轮的对话历史特征，$U_t$代表用户发言，$[SEP]$用来间隔不同的轮数。
+
+**特征二：对话状态(Dialouge State)**
+
+对话状态使用槽值对(slots-value pairs)和意图(Intent)来表示：
+
+**Slots-value pairs：**
+$$
+B_t\;=\; B_t^1 \oplus ... \oplus B_t^J,\\
+
+B_t^j \; = \;{ \lbrack SLOT \rbrack}^j \oplus S^j \oplus 
+            - \oplus V_t^j \oplus ; \oplus V_{t-1}^j
+            - \oplus L_t^j \oplus ; \oplus L_{t-1}^j
+$$
+其中$S^j$代表第$j$个Slot的名称，比如`姓名`，$V_t^j$表示第$j$个Slot在第$t$轮的值，$L_t^j$表示第$j$个Slot在第$t$轮与意图$I_t$在shema上的最短距离，；表示值得间隔符，`-`表示不同类型值的间隔。
+
+**意图：**
+$$
+E_t = [INTENT] \oplus  I_t \oplus ; \oplus I_{t-1}
+$$
+其中$E_t$表示第$t$轮和第$t-1$轮的意图特征，$I_t$表示在第$t$轮的意图名称，比如`犹豫期时长`，$;$表示值的间隔符。
+
+对$[SLOT]$和$[INTENT]$位置的表达分别做四分类和二分类，根据操作类型得到第$t$轮的最终状态。
+
+
+
+
+
+打断与恢复解决方案：
+
+不能仅仅考虑上一轮的对话，需要考虑$l$轮，对$[t-l, t]$轮对话建模，这样才能从$l$轮的对话中获取实体或者意图，但是如果多分类得到的仅仅是操作方法，具体是从那一轮得到的呢？
+
+
 
 ## Keras
 
@@ -589,18 +990,6 @@ pip install keras # 目前最新的版本是2.2.4
     机器学习模型评估的黄金标准是k折交叉验证，但是在深度学习中由于数据量太大，所需资源太多，一般不用K折交叉验证。
 
     StratifiedKFold是分层的KFold，分出的每个子集的正负样本的比例相差不大
-
-### 在Keras中使用scikit-learn
-
-​	Keras为深度学习模型提供了一个包装类（Wrapper），将Keras的深度学习模型包装成Scikit-learn中的分类模型或回归模型，以便于使用sklearn中的方法和函数。
-
-- 分类模型：KerasClassifier
-- 回归模型：KerasRegressor
-  - 这两个模型使用build_fn来绑定模型
-
-### 多分类：鸢尾花数据集
-
-- 鸢尾花数据集准确度可以达到95~97%
 
 ## Dask
 
@@ -1060,7 +1449,7 @@ if __name__ == '__main__':
   - add及add_
   - 支持切片选择
   - resize/reshape使用view
-
+- bool索引
   - 更多的操作：https://pytorch.org/docs/stable/torch.html
 
 - Numpy ndarray与torch.Tensor之间可以互相转化
@@ -1108,12 +1497,41 @@ parameters tuning  with grid search
 - nn
 
   - nn.Conv2d()
-
-  - nn.Linear()
-
+- nn.Linear()
   - nn.MSELoss()
+- nn.CrossEntropyLoss()
 
-  - nn.CrossEntropyLoss()
+### pytorch分布式训练
+
+1. gradient accumulation step和epoch的关系是什么样的？
+
+
+
+
+
+### torch设置随机种子
+
+```python
+def set_seed(seed: int = 19, with_cuda=True):
+    random.seed(seed) # python
+    np.random.seed(seed) # numpy
+    torch.manual_seed(seed) # torch
+    if with_cuda:
+        torch.cuda.manual_seed_all(seed)  # torch cuda
+```
+
+
+### torch中常用的操作tensor的函数
+
+- `torch.split(tensor, dim=2)`从dim维度切分tensor；
+- `torch.stack([tensor1, tensor2], dim=1)`从第一个维度合并tensor，合并后会在dim增加一个维度；
+- `torch.sequeeze(tensor,dim=1)`给tensor减小一个维度；
+- `torch.unsequeeze(tensor, dim=1)`给tensor增加一个维度；
+- `torch.expand(tensor, size)`把tensor中是维度为1的扩展到与size相同，做广播；
+- `tensor.transpose(1,2)`：交换tensor的第1和第2个维度；
+- `torch.cat([tensor1, tensor2],dim=1)`:把tensor1和tensor2合并，并不增加维度，与`stack()`不同。
+
+
 
 ## tensorflow 1.x
 
@@ -1729,7 +2147,10 @@ array([[0.81940995, 0.        , 0.57320793],
 
 Using the `TfidfTransformer`’s default settings, `TfidfTransformer(norm='l2', use_idf=True, smooth_idf=True, sublinear_tf=False)` the term frequency, the number of times a term occurs in a given document, is multiplied with idf component, which is computed as
 
-$$idf(t)=log\frac{1+n}{1+df(t)}+1$$
+$$
+idf(t)=log\frac{1+n}{1+df(t)}+1
+$$
+
 
 如果设置smoth_idf=False时，计算公式如下：
 $$
@@ -1747,7 +2168,7 @@ the vector of raw tf-idf：
 
 [3, 0, 2.0986]
 
-然后再L2正则化，为什么要正则化？正则化后，两个向量的余弦相似度就是这两个向量的点乘。
+然后再L2正则化，为什么要正则化？正则化后，两个向量的余弦相似度就是这两个向量的点乘.
 $$
 \frac{[3,0,2.0986]}{\sqrt{3^2+0^2+2.0986^2}}=[0.819,0,0.573]
 $$
@@ -1859,10 +2280,6 @@ Doc2Vec 也包括两种实现方式：DBOW（Distributed Bag of Words）和 DM �
 - 语料准备：有一个自字义的词典，1万多个，金融相关的，使用jieba分词，带词性。然后把语料的中词过滤掉词性，过滤掉停用词，成型处理后的训练数据；
 - 使用gensim的`word2vec.Text8Corpus(path)`加载处理好的语料库，`word2vec.Word2vec(sentence)`。
 
-
-
-
-
 ### 第六节 文本分类
 
 主要流程：
@@ -1948,7 +2365,7 @@ SGD makes the training faster.
 
 ### PPO
 
-PPO是policy gradient的一个变形。在reinforcement learning里面Environment和Reward function不是可以控制的，而是在训练开始之前已经确定的，唯一可以调整的是actor的Policy，使得可以获得最大的reward。PPO是Deep mind的default的强化学习的方法。
+PPO是policy gradient的一个变形，是将off-policy代替on-policy的近似处理，便于模型的训练。在reinforcement learning里面Environment和Reward function不是可以控制的，而是在训练开始之前已经确定的，唯一可以调整的是actor的Policy，使得可以获得最大的reward。PPO是Deep mind的default的强化学习的方法。
 
 #### 复习policy gradient
 
@@ -2034,6 +2451,37 @@ TRPO是PPO的前身，并没有把限制条件放到objective function中，实�
 
   <img src="images_mldl/image-20201113124333695.png" alt="image-20201113124333695" style="zoom:50%;" />
 
+### 训练过程中的问题
+
+`TextCNN`模型在训练过程中，f1在0.09附近，在dev/train数据集上的loss不下降
+
+参数：
+
+- batch_size：128
+- num_epochs: 10
+- lr：1e-4
+- num_filters: 100
+- filter_size: 2,3,4
+
+<img src="/Users/renal/Documents/mllearn/githubs/machine_learning/images_mldl/image-20210531190618688.png" alt="image-20210531190618688" style="zoom:67%;" />
+
+问题排查：
+
+1. 数据集加载常见问题
+   - 验证集和测试集的label编码要用training data的label编码
+   - 数据集加载错误
+
+2. 算法常见问题：
+   - 使用CrossEntropy时，输入的是经过softmax的输出，这样是错误的，因为pytorch 中`CrossEntropy`是`Softmax`加`NLLoss`相结合
+
+问题解决：
+
+<img src="/Users/renal/Documents/mllearn/githubs/machine_learning/images_mldl/image-20210602143707198.png" alt="image-20210602143707198" style="zoom: 50%;" />
+
+调整参数：
+
+- 将learn rate增加到0.01
+
 # 面试题目汇总
 
 随机森林：
@@ -2049,4 +2497,294 @@ TRPO是PPO的前身，并没有把限制条件放到objective function中，实�
    随机森林属于Bagging类的集成学习，Bagging的主要好处是集成后的分类器的方差，比基分类器的方差小。所以基分类器最好是不稳定的本身对样本分布较为敏感的基分类器。线性分类器或者K-近邻都是较为稳定的分类器，本身方差并不大，所以用Bagging方法并不能获得更好的表现，甚至因为采样问题更难收敛增大了集成分类器的难度。
 
 5. 样本不平衡问题？有哪些解决方法？sklearn中的random forest的balanced是如何处理的？
+
 6. 有一个二分类任务，但是正样本中有标注错误的数据，负样本都是正确的，并且负样本远远大于正样本的数量，能否设计一个分类算法？
+
+
+
+# Litemind算法细节
+
+## KBQA无监督算法
+
+实体类型有三种：`NORMAL`、`CVT`、`DURING`
+
+属性类型有四种：`String`、`Boolean`、`Integer`、`Float`
+
+四种Link类型：`EntityLinkProp`、`BoolLinkEntity`、`NormalLinkCvt`、`EntityLinkNormal`
+
+```
+（1）使用一种特殊的树结构来表示查询语句，该树结构每层最多只有一个节点有子节点，其他节点全部为叶子节点；
+（2）树的高度上限为3；
+（3）主要包括构建基本查询图、生长、剪枝三步
+（4）将一棵树成为一个logic，一个枝成为一个link
+```
+
+查询树生长主要步骤：
+
+1. 确定初始树（输入是实体列表和意图，`无法识别意图`为空。输出是
+    * 意图和实体均为空时，查询树为空并返回
+    * 意图为空时，查询树将实体作为根节点并返回
+    * 意图不为空时，将意图映射到图谱关系，获得一条边连接两个节点的基础查询树
+    * 根据实体类型和两个节点类型填充实体，仅仅填充`NORMAL`和`DURING`两类实体，`CVT`类型的实体没有值需要填充。
+
+2. 获取生长点
+
+    - 仅生长没有填充值的的实体（如果填充上了，则限制条件已经有了，就没有必要在生长了）；
+    - 每个节点只能生长一次；
+    - 生长节点的类型仅限于`NORMAL`和`CVT`类型，当两者同时存在时，仅生长`CVT`类型节点；
+    - 仅支持单节点生长：如果待生长节点数大于1，则根据意图与实体匹配程度，选择匹配度高的节点生长；
+
+3. 获取生长意图
+
+    - 根据生长点类型和知识图谱Schema，获取所有生长的边
+    - 判定实体是否与另一侧实体类型匹配
+    - 使用词向量表征生长边类型和问句，计算相似性
+
+4. 迭代生长
+
+    - 如果到停止条件，返回当前查询树
+    - 将实体值填入树中对应类型节点中，并将该实体值删除
+    - 获取最佳生长点，通过生长点类型和知识图谱Schema，获取所有生长边
+    - 将生长边类型和另一侧实体类型作为生长边特征，计算与问句之间的相似性
+    - 将相似性最高的生长边添加到当前生长树上
+
+    注意：
+
+    - 每个节点只能生长一次
+    - 生长节点仅限于CVT和Normal，当同时存在CVT和Normal节点时，仅生长CVT；仅生长value为None的节点
+    - 仅支持单节点生长：如果生长节点数大于1，根据意图与实体匹配程度选择匹配度高的生长节点
+
+5. 剪枝： 去除对于叶子结点为空的边
+
+    
+
+gremlin查询：
+
+*安享康健犹豫期多长？*
+
+```sql
+g.V().hasLabel("XZTK").has("Mc", "招商信诺安享康健重大疾病保险").bothE("YYQ_SC").otherV().path().by(elementMap("Mc")).by("type").by(elementMap("Mc"))
+
+说明：
+g.v()：查询所有的节点
+hasLabel("XZTK")：类型是ZXTK(险种条款)
+bothE("YYQ_SC")：YYQ_SC这个边以及连接的两个节点
+otherV():游走到其他顶点，这些顶点不包含此顶点从哪移动来的那些顶点，指"时长"这个点，也就是答案这个点
+path()：获取路径
+by()：对路径上的属性进行过滤
+elementMap("Mc"):路径只要Mc属性，或者类型("type") 
+```
+
+```sql
+// 我是女性，买了安享康健，半年交费，问一下保险年龄是多少？
+g.V().hasLabel("XZTK").has("Mc", "招商信诺安享康健重大疾病保险")
+.parallel().bothE("NLBXQJXZTK").parallel().otherV()
+.and(bothE("NLBXQJJFFS").otherV().hasLabel("JFFS").has("Mc", "半年交"))
+.and(bothE("BBRXB").otherV().hasLabel("XB").has("Mc", "女"))
+.parallel().bothE("NLBXQJBXJH", "JFQJSC", "NJLQNLFW", "BXQJ_SC", "NLBFQJXSQD", "BXQJ_NLFW", "NLBXQJBBRNLFW")
+.parallel().otherV()
+```
+
+```sql
+g.V().hasLabel("XZTK").has("Mc", "招商信诺安享康健重大疾病保险")
+.parallel().bothE("NLBXQJXZTK").parallel().otherV()
+.and(bothE("NLBXQJJFFS").otherV().hasLabel("JFFS").has("Mc", "半年交"))
+.and(bothE("BBRXB").otherV().hasLabel("XB").has("Mc", "女")).parallel().bothE("NLBXQJBXJH", "JFQJSC", "NJLQNLFW", "BXQJ_SC", "NLBFQJXSQD", "BXQJ_NLFW", "NLBXQJBBRNLFW")
+.parallel().otherV()
+.path().by(elementMap("Mc")).by("type").by(elementMap("")).by("type").by(elementMap("Mc"))
+```
+
+
+
+## 文本相似性
+
+### 字面文本相似——TF-IDF、BM25
+
+全文检索引擎Solar、es底层都是基于Lucence，而Lucence的检索算法第一代是使用tf-idf，第二代是使用BM25。
+
+- 使用tf-idf计算相似性
+
+  以`Lucence的原理`与文档D的相似性计算为例：
+
+  - 分词为`Lucence`、`的`、`原理`三个词：
+  - 分别计算这三个词的tf-idf score
+  - 求和
+
+  $$
+  similarty(Lucence的原理|D) = \sum (\sqrt{tf} \times lg_2(\frac{numDocs}{docFreqs + 1})  \times \frac{1}{\sqrt{docLen}})
+  $$
+
+  这个公式分为了三部分：
+
+  - tf score
+  - idf score
+  - fieldNorm：对文本长度做的归一化
+
+- BM25（BM：Best Matching）
+
+  BM25是基于TF-IDF，但是对TF-IDF做了优化，主要是对TF做的优化。TF在TF-IDF算法中的缺点：词频会随着文本的长度增大而增大。比如两篇技术帖子都是讲`王思聪`的，文本长的的tf score肯定是比短文本的高（假设两篇文档的分布相似），而`王思聪`的idf score是一样的，所以对长文本是有偏向性的。
+
+  传统的TF值理论上是可以无限大的。而BM25与之不同，它在TF计算方法中增加了一个常量k，用来限制TF值的增长极限。下面是两者的公式：
+  $$
+  传统 TF Score = sqrt(tf) \\
+  BM25的 TF Score = \frac{(k + 1) * tf} {k + tf}
+  $$
+  下面是两种计算方法中，词频对TF Score影响的走势图。从图中可以看到，当tf增加时，TF Score跟着增加，但是BM25的TF Score会被限制在0~k+1之间。它可以无限逼近k+1，但永远无法触达它。这在业务上可以理解为某一个因素的影响强度不能是无限的，而是有个最大值，这也符合我们对文本相关性逻辑的理解。 在Lucence的默认设置里，k＝1.2，使用者可以修改它。
+
+  <img src="/Users/renal/Documents/mllearn/githubs/machine_learning/images_mldl/image-20210607111558629.png" alt="image-20210607111558629" style="zoom: 45%;" />
+
+  **BM25如何对待文档长度**
+
+   BM25还引入了平均文档长度的概念，单个文档长度对相关性的影响力与它和平均长度的比值有关系。BM25的TF公式里，除了k外，引入另外两个参数：L和b。L是文档长度与平均长度的比值。如果文档长度是平均长度的2倍，则L＝2。b是一个常数，它的作用是规定L对评分的影响有多大。加了L和b的公式变为：
+  $$
+  TF Score = \frac{(k + 1) \times tf}{k \times (1.0 - b + b \times L) + tf}
+  $$
+   下面是不同L的条件下，词频对TFScore影响的走势图：
+
+  <img src="/Users/renal/Documents/mllearn/githubs/machine_learning/images_mldl/image-20210607111813437.png" alt="image-20210607111813437" style="zoom:50%;" />
+
+  从图上可以看到，文档越短，它逼近上限的速度越快，反之则越慢。这是可以理解的，对于只有几个词的内容，比如文章“标题”，只需要匹配很少的几个词，就可以确定相关性。而对于大篇幅的内容，比如一本书的内容，需要匹配很多词才能知道它的重点是讲什么。
+
+    上文说到，参数b的作用是设定L对评分的影响有多大。如果把b设置为0，则L完全失去对评分的影响力。b的值越大，L对总评分的影响力越大。此时，相似度最终的完整公式为：
+  $$
+  similarity = IDF \times \frac{(k + 1) \times tf}{k \times (1.0 - b + b \times \frac{|D|}{avgDL} ) + tf}
+  $$
+  其中$|D|$代表文档D的长度，$avgDL$为平均文档长度。
+
+  IDF与信息熵的关联：
+
+  idf的score与一个词出现在文档的中的概率成反比，其实与信息熵的公式有点儿类似：$-logp$，也是与一个事物出现的概率成反比。
+
+  参考博文：[搜索中的权重利器：TF-IDF和BM25](https://my.oschina.net/stanleysun/blog/1617727)
+
+### 语义相似性
+
+**FAISS**
+
+facebook AI 
+
+### 文本相似性的距离
+
+- 欧式距离
+- 编辑距离
+- 余弦相似度
+- Jaccard距离
+
+https://blog.csdn.net/weixin_42080490/article/details/108912665
+
+算法细节
+
+## 意图识别
+
+目前针对轻量化模型和预训练模型，已经不在拘泥于算法架构。`TextCNN`与`Bert`在实际的训练中，相差也就2%左右。如同CV一样，我们的重点应该是如何利用机器学习思想，如何去解决分类问题中，**低耗时、小样本、鲁棒性、不平衡、测试实验、增量学习、长文本**等问题。
+
+一个完整的分类任务有一下四步：（1）标签定义、（2）数据标注（3）算法策略（4）测试部署
+
+<img src="/Users/renal/Documents/mllearn/githubs/machine_learning/images_mldl/v2-7bf3e0c7c61fe1ebb72cf76ccbb751d1_720w.png" alt="img" style="zoom:67%;" />
+
+
+
+### Q1: 如何科学地构建分类标签体系
+
+分类标签的定义至关重要，面对复杂的标签问题，最为关键的一点就是要紧密贴合业务、和专家共同设定，而不是靠“蛮力”去解决。这里给出笔者曾涉及到的一些标签定义方法：
+
+1. **长尾标签**：某些分类标签下的样本天然就很少，可以把这一类标签设置「其他」，然后在**下一层级**单独对这些长尾标签进一步处理。
+2. **易混淆标签**：一些标签下的样本表现形式不易区分，首先需要思考这类标签是否可以直接合并；如果不可以，可以先将这类标签进行统一，然后在**下一层级**进行规则处理。
+3. **多标签**：一些场景下的标签设置可能达到几百个，可以设置多层级的标签体系进行处理。例如，先构建标签大类、再构建标签小类；也可以设置多个二分类，适用于标签分类相对独立，并且经常需要新增修改的场景，能做到相互独立、便于维护。
+4. **未知标签**：业务冷启动时，如果尚不清楚设置哪些标签合适，可以尝试通过**文本聚类**方式初步划分标签，再辅以专家介入共同设定，这也是一个循环迭代的过程。
+
+对于上述的「长尾标签」和「易混淆标签」，当然也可在模型层面进行优化，这往往涉及样本不平衡和hard example的处理问题，我们在下文详细阐述。
+
+
+
+
+
+### **Q6: 如何更好处理不平衡问题（hard example问题）？**
+
+不平衡问题（长尾问题）是文本分类任务一个难啃的骨头。也许有人会问：为何不在初始构造数据集时，就让每个分类标签下的样本数量相同，这不就解决不平衡问题了吗？
+
+事实上，**不平衡问题不仅仅是分类标签下样本数量的不平衡，其本质上更是难易样本的不平衡**：即使样本数量是平衡的，有的hard example还是很难学习。类似，对那些数量较少的类别进行学习，在不做数据补充的情况下，也可看作是一个hard example问题。
+
+解决不平衡问题的通常思路有两种：**重采样（re-sampling）和重加权（re-weighting）**
+
+- **欠采样&过采样&SMOTE**
+
+- - 欠采样：抛弃大量case，可能导致偏差加大；
+  - 过采样：可能会导致过拟合；
+  - SMOTE：一种近邻插值，降低过拟合风险，但不能直接应用于NLP任务的离散空间插值。
+
+- **数据增强**：文本增强技术更适合于替代上述过采样和SMOTE。
+
+靠谱点的重采样的方法是数据增强，有哪些可以落地的数据增强的方法呢？
+
+
+
+## 实体链接
+
+- blur值：提及实体与标准实体最大的映射个数
+- index_mapping：全文索引，每个字符与实体的映射
+- weight_mapping：保存了每个字的词频权重
+- 算法流程
+  - 不同实体识别组件识别的有交叉的实体先按index进行分组，比如index：(2, 5)和(3, 6)有交叉，会分到一个组；
+  - 根据分组内每个提及实体的字和全文检索，找到链接的候选实体。如果一个字对应的实体太多，需要做限制。比如"招"字对应了很多实体，就不用"招"字召回候选实体了；
+  - 实体链接：通过计算提及实体与候选实体的文本相似性（类似于编辑距离，与编辑距离不同的是有一个分数的衰减），获得一个0~1的得分；
+  - 比较组内所候选链接实体的分数，如果分数相同取比较长的实体；如果分数相同、分数也相同则同时保留。比如“招盈”两个字，与“招盈二号”、“招盈六号”的得分是一样的，这种情况都保留下来，然后分别去查。
+
+
+
+## 预训练模型
+
+BertModel的输出中从4.4.2版本改为如下：
+
+```python
+BaseModelOutputWithPoolingAndCrossAttentions(
+            last_hidden_state=sequence_output,
+            pooler_output=pooled_output,
+            past_key_values=encoder_outputs.past_key_values,
+            hidden_states=encoder_outputs.hidden_states,
+            attentions=encoder_outputs.attentions,
+            cross_attentions=encoder_outputs.cross_attentions,
+        )
+```
+
+这个底层是一个`OrderedDict`，但是兼容了3.x版本的取值方法，在3.x版本中bert `forward()`的输出是一个tuple，第一个值是`last_hidden_states`，第二个值是`pooled_output`，如果`output_hidden_states`设置为True时，为第三个值。
+
+在4.x版本中，可以用key直接获取结果。
+
+**注意：**`last_hidden_states`中的[CLS]表达与pooled_output是不同的。pooled_out是用来做NSP任务。
+
+
+
+## coding
+
+### 1. 动态规划
+
+动态规划最最核心的是状态转移方程，并且dp数组的遍历方向是怎么样的？
+
+```python
+# 凑零钱问题
+def coinChange(coins: List[int], amount: int)->int:
+  # 定义dp数组，dp[i] = x 表示组成金额i至少需要x个硬币
+  dp = [amount+1] * (amount + 1)
+  # bad case
+  dp[0] = 0
+  for i in range(i, len(dp)):
+    for coin in coins:
+      if i-coin<0: continue
+      # 状态转移方程，一定是从计算过的位置和默认值中选择最大的或最小值
+      df[i] = min(dp[i], dp[i-coin]+1)
+   return dp[amount] if dp[amount] != amount+1 else -1
+```
+
+`dp`数组遍历的问题：
+
+- 遍历的方向可以是任意的，正向遍历、反向遍历、斜着遍历都可以，有如下两个原则：
+- 遍历的过程中，所需的状态都是已经计算出来的；
+- 遍历的终点必须是存储结果的位置。
+
+#### 子问题
+
+- 编辑距离
+
+  **解决两个字符串的动态规划问题，一般都是用两个指针 `i,j` 分别指向两个字符串的最后，然后一步步往前走，缩小问题的规模**
+
